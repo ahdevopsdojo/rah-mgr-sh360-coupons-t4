@@ -1,0 +1,77 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"mySQLAdminLoginName": {
+			"type": "string",
+			"defaultValue": "azureuser",
+			"metadata": {
+				"description": "Admin login name cannot be 'azure_superuser', 'admin', 'administrator', 'root', 'guest' or 'public'."
+			}
+		},
+		"mySQLAdminLoginPassword": {
+			"type": "securestring",
+			"defaultValue": "",
+			"metadata": {
+				"description": "This field should be between 8 and 128 characters long. Your password must contain characters from three of the following categories – English uppercase letters, English lowercase letters, numbers (0-9), and non-alphanumeric characters (!, $, #, %, etc.)."
+			}
+		},
+		"mySQLServerName": {
+			"type": "string",
+			"defaultValue": "defaultname"
+		}
+	},
+	"variables": {
+		"location": "[resourceGroup().location]",
+		"mySQLServerName": "[parameters('mySQLServerName')]",
+		"mySQLDatabaseName": "hotel_coupon"
+	},
+	"resources": [{
+		"apiVersion": "2017-12-01-preview",
+		"type": "Microsoft.DBforMySQL/servers",
+		"name": "[variables('mySQLServerName')]",
+		"sku": {
+			"name": "B_Gen5_1",
+			"tier": "Basic",
+			"family": "Gen5",
+			"capacity": 1
+		},
+		"location": "[variables('location')]",
+		"properties": {
+			"administratorLogin": "[parameters('mySQLAdminLoginName')]",
+			"administratorLoginPassword": "[parameters('mySQLAdminLoginPassword')]",
+			"storageProfile": {
+				"storageMB": 5120,
+				"backupRetentionDays": 7,
+				"geoRedundantBackup": "Disabled"
+			},
+			"version": "5.7",
+			"sslEnforcement": "Disabled"
+		},
+		"resources": [{
+				"apiVersion": "2017-12-01-preview",
+				"type": "databases",
+				"name": "[variables('mySQLDatabaseName')]",
+				"properties": {
+					"charset": "utf8",
+					"collation": "utf8_general_ci"
+				},
+				"dependsOn": [
+					"[resourceId('Microsoft.DBforMySQL/servers', variables('mySQLServerName'))]"
+				]
+			},
+			{
+				"apiVersion": "2017-12-01-preview",
+				"type": "firewallRules",
+				"name": "AllowAllWindowsAzureIps",
+				"properties": {
+					"startIpAddress": "0.0.0.0",
+					"endIpAddress": "0.0.0.0"
+				},
+				"dependsOn": [
+					"[resourceId('Microsoft.DBforMySQL/servers', variables('mySQLServerName'))]"
+				]
+			}
+		]
+	}]
+}

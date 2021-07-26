@@ -1,0 +1,97 @@
+    {
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "webAppName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The name of the web app that you wish to create."
+      }
+    },
+		"mySQLServerName": {
+			"type": "string",
+			"defaultValue": "defaultname"
+		},
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "keyvault"
+    }
+  },
+  "variables": {
+    "location": "[resourceGroup().location]",
+    "webAppName": "[parameters('webAppName')]",
+    "servicePlanName": "[variables('webAppName')]",
+    "mySQLServerName": "[variables('webAppName')]",
+    "mySQLDatabaseName": "hotel_coupon",
+    "identity_resource_id": "[concat(resourceId('Microsoft.Web/sites', variables('webAppName')), '/providers/Microsoft.ManagedIdentity/Identities/default')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2016-09-01",
+      "type": "Microsoft.Web/serverfarms",
+      "name": "[variables('servicePlanName')]",
+      "kind": "app",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "F1",
+        "tier": "Free",
+        "size": "F1",
+        "family": "F",
+        "capacity": 1
+      }
+    },
+    {
+      "apiVersion": "2016-08-01",
+      "type": "Microsoft.Web/sites",
+      "name": "[variables('webAppName')]",
+      "kind": "app",
+      "identity":{
+        "type":"SystemAssigned"
+      },
+      "location": "[variables('location')]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('servicePlanName'))]",
+        "siteConfig": {
+          "AlwaysOn": false,
+          "javaVersion": "1.8.0_172_ZULU",
+          "javaContainer": "TOMCAT",
+          "javaContainerVersion": "8.0"
+        },
+        "httpsOnly": true
+      },
+      "resources": [
+        {
+          "apiVersion": "2016-08-01",
+          "type": "config",
+          "name": "appsettings",
+          "properties": {
+            "SPRING_DATASOURCE_URL": "[concat('jdbc:mysql://', variables('mySQLServerName'), '.mysql.database.azure.com:3306/', variables('mySQLDatabaseName'), '?verifyServerCertificate=true&useSSL=true&requireSSL=false')]",
+            "AZURE_KEYVAULT_URI": "[concat('https://', parameters('keyvaultname'), '.vault.azure.net/')]",
+            "SPRING_DATASOURCE_PASSWORD": "[concat('@Microsoft.KeyVault(SecretUri=https://', parameters('keyvaultname'),'.vault.azure.net/secrets/spring-datasource-password/)')]",
+            "SPRING_DATASOURCE_USERNAME": "[concat('@Microsoft.KeyVault(SecretUri=https://', parameters('keyvaultname'),'.vault.azure.net/secrets/spring-datasource-username/)')]",
+            "AZURE_KEYVAULT_CLIENT_ID": "[concat('@Microsoft.KeyVault(SecretUri=https://', parameters('keyvaultname'),'.vault.azure.net/secrets/azure-keyvault-client-id/)')]",
+            "AZURE_KEYVAULT_CLIENT_KEY": "[concat('@Microsoft.KeyVault(SecretUri=https://', parameters('keyvaultname'),'.vault.azure.net/secrets/azure-keyvault-client-key/)')]"
+                  
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', parameters('webAppName'))]"
+          ]
+        }
+      ],
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('servicePlanName'))]"
+      ]
+    }
+  ],
+   "outputs": {
+        "tenantId": {
+            "type": "String",
+            "value": "[reference(variables('identity_resource_id'), '2015-08-31-PREVIEW').tenantId]"
+        },
+        "objectId": {
+            "type": "String",
+            "value": "[reference(variables('identity_resource_id'), '2015-08-31-PREVIEW').principalId]"
+        }
+    }
+}

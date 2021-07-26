@@ -1,0 +1,52 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "accessPolicies": {
+      "value": []
+    },
+    "secretsObject": {
+      "value": {
+        "secrets": [
+          {
+            "secretName": "exampleSecret1",
+            "secretValue": "secretVaule1"
+          }
+        ]
+      }
+    },
+    "enableVaultForDeployment": {
+      "value": true
+    },
+    "enableVaultForDiskEncryption": {
+      "value": true
+    },
+    "enableVaultForTemplateDeployment": {
+      "value": true
+    },
+    "keyVaultName": {
+      "value": null
+    },
+    "logsRetentionInDays": {
+      "value": 30
+    },
+    "logAnalyticsWorkspaceName": {
+      "value": null
+    },
+    "logAnalyticsWorkspaceResourceGroup": {
+      "value": null
+    },
+    "vaultSku": {
+      "value": "Premium"
+    },
+    "diagnosticStorageAccountName": {
+      "value": null
+    },
+    "diagnosticStorageAccountRG": {
+      "value": null
+    },
+    "guid": {
+      "value": "pid-5a669062-d8d0-471f-b36a-40115651cea7"
+    }
+  }
+}

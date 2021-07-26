@@ -1,0 +1,29 @@
+{
+    "variables": [
+      {
+        "name": "keyVaultName",
+        "value": "keyvaultcouponsprd"
+      },
+      {
+        "name": "location",
+        "value": "eastus"
+      },
+      {
+        "name": "rglocationFull",
+        "value": "East US"
+      },
+      {
+        "name": "resourcegroup",
+        "value": "Dojo-Coupon-PRD"
+      },
+      {
+        "name": "storageAccount",
+        "value": "cpnprddojostrg"
+      },
+      {
+        "name": "webAppName",
+        "value": "dojo-coupon-prd"
+      }
+    ]
+  }
+  
