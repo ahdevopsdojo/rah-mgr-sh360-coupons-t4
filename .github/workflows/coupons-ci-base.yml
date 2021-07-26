@@ -67,12 +67,12 @@ jobs:
       with:
           name: drop
           path: D:\a\${{ env.repoName }}\upload
-
+          
     #TODO [CI]: This action is used to trigger the release workflow in dev environment. Replace the ${{ false }} with github.event_name != 'pull_request' to enable the below action
-    - name: Trigger - Release to dev
+    - name: Trigger - Release to prd
       if: github.event_name != 'pull_request'
       uses: benc-uk/workflow-dispatch@v1
       with:
         workflow: Coupons-CD-Base
         token: ${{ secrets.PAT }}
-        inputs: '{ "environment": "dev" }'
+        inputs: '{ "environment": "prd" }'

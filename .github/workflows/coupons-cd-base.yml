@@ -241,7 +241,6 @@ jobs:
         
     - name: Invoke Website
       shell: bash
-      if: env.pipeline_env == 'qa'
       run: |
         echo "Invoking https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net/"
         status=$(curl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net/" -I 2>&1 | awk '/HTTP\// {print $2}')
@@ -587,11 +586,11 @@ jobs:
 
   Release_To_Next_Env:
     #TODO [CQ]: In needs now also add BDD_Automated_Tests,UI_Tests. This ensures this stage runs after release & BDD & UI Test stages run
-    needs: [release,BDD_Automated_Tests,UI_Tests]
+    needs: [release,BDD_Automated_Tests]
     runs-on: ubuntu-latest # The type of runner that the job will run on
     # The below conditions ensure that, this stage only runs for dev & qa, and only if release stages is a success, and that the tests didn't fail
     #TODO [CQ]: In if condition now also add BDD_Automated_Tests & UI_Tests success condition. This ensures this stage only runs if the tests pass
-    if: always() && needs.release.outputs.pipeline_env != 'prd' && needs.release.outputs.result == 'success' && needs.BDD_Automated_Tests.outputs.bdd_status != 'failure' && needs.UI_Tests.outputs.ui_status != 'failure'
+    if: always() && needs.release.outputs.pipeline_env != 'dev' && needs.release.outputs.result == 'success' && needs.BDD_Automated_Tests.outputs.bdd_status != 'failure'
     steps:
     - name: Checkout Repository #Checkout the Repository into the agent
       uses: actions/checkout@v2
@@ -604,58 +603,58 @@ jobs:
     - name: Configure parameters for Repository Dispatch
       shell: bash
       run: |
-        if [ ${{ needs.release.outputs.pipeline_env }} = 'dev' ]; then
+        if [ ${{ needs.release.outputs.pipeline_env }} = 'prd' ]; then
           echo "trigger=qa" >> $GITHUB_ENV
         fi
         if [ ${{ needs.release.outputs.pipeline_env }} = 'qa' ]; then
-          echo "trigger=prd" >> $GITHUB_ENV
+          echo "trigger=dev" >> $GITHUB_ENV
         fi
 
     #TODO [CO]: Uncomment the below block to enable the evaluation of latency and availability of PRD application.
 
-    # This action is used to get the latency of the PRD coupons application using App Insights API
-    - name: Get Latency
-      uses: fjogeleit/http-request-action@master
-      if: env.trigger == 'prd'
-      id: slo
-      with:
-        url: https://api.applicationinsights.io/v1/apps/${{ secrets.SLO_APP_ID }}${{ env.slo_query }}
-        method: 'GET'
-        customHeaders: '{"x-api-key":"${{ secrets.SLO_API_KEY }}"}'
-#
-    # This action is used to evaluate the latency of the PRD coupons application. If it is less than the threshold, the pipeline proceeds to PRD or else it stops release to PRD.
-    - name: Check Latency
-      shell: bash
-      if: env.trigger == 'prd'
-      run: |
-        slo=$(echo '${{ steps.slo.outputs.response }}' | jq .tables[].rows[0][1])
-        echo $slo
-        if (( $(echo "$slo ${{ env.slo_threshold }}" | awk '{print ($1 > $2)}') ));
-        then
-          exit 1
-        fi
-#
-    # This action is used to get the availability of the PRD coupons application using App Insights API
-    - name: Get Availability
-      uses: fjogeleit/http-request-action@master
-      if: env.trigger == 'prd'
-      id: availability
-      with:
-        url: https://api.applicationinsights.io/v1/apps/${{ secrets.SLO_APP_ID }}${{ env.latency_query }}
-        method: 'GET'
-        customHeaders: '{"x-api-key":"${{ secrets.SLO_API_KEY }}"}'
-#
-    # This action is used to evaluate the availability of the PRD coupons application. If it is equal to 1 i.e. it is available, the pipeline proceeds to PRD or else if it is equal to 0 it stops release to PRD.
-    - name: Check Availability
-      shell: bash
-      if: env.trigger == 'prd'
-      run: |
-        latency=$(echo '${{ steps.availability.outputs.response }}' | jq .tables[].rows[0][0] | tr -d '"')
-        echo $latency
-        if [ $latency -eq 0 ];
-        then
-          exit 1
-        fi
+    ## This action is used to get the latency of the PRD coupons application using App Insights API
+    #- name: Get Latency
+    #  uses: fjogeleit/http-request-action@master
+    #  if: env.trigger == 'prd'
+    #  id: slo
+    #  with:
+    #    url: https://api.applicationinsights.io/v1/apps/${{ secrets.SLO_APP_ID }}${{ env.slo_query }}
+    #    method: 'GET'
+    #    customHeaders: '{"x-api-key":"${{ secrets.SLO_API_KEY }}"}'
+##
+    ## This action is used to evaluate the latency of the PRD coupons application. If it is less than the threshold, the pipeline proceeds to PRD or else it stops release to PRD.
+    ##- name: Check Latency
+    ##  shell: bash
+    ##  if: env.trigger == 'prd'
+    ##  run: |
+    ##    slo=$(echo '${{ steps.slo.outputs.response }}' | jq .tables[].rows[0][1])
+    ##    echo $slo
+    ##    if (( $(echo "$slo ${{ env.slo_threshold }}" | awk '{print ($1 > $2)}') ));
+    ##    then
+    ##      exit 1
+    ##    fi
+##
+    ## This action is used to get the availability of the PRD coupons application using App Insights API
+    #- name: Get Availability
+    #  uses: fjogeleit/http-request-action@master
+    #  if: env.trigger == 'prd'
+    #  id: availability
+    #  with:
+    #    url: https://api.applicationinsights.io/v1/apps/${{ secrets.SLO_APP_ID }}${{ env.latency_query }}
+    #    method: 'GET'
+    #    customHeaders: '{"x-api-key":"${{ secrets.SLO_API_KEY }}"}'
+##
+    ## This action is used to evaluate the availability of the PRD coupons application. If it is equal to 1 i.e. it is available, the pipeline proceeds to PRD or else if it is equal to 0 it stops release to PRD.
+    #- name: Check Availability
+    #  shell: bash
+    #  if: env.trigger == 'prd'
+    #  run: |
+    #    latency=$(echo '${{ steps.availability.outputs.response }}' | jq .tables[].rows[0][0] | tr -d '"')
+    #    echo $latency
+    #    if [ $latency -eq 0 ];
+    #    then
+    #      exit 1
+    #    fi
 
     # This action is responsible to re-running the same CD pipeline using workflow dispatch in the next environment
     #TODO [CD]: Remove the below if condition to enable the action
