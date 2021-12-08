@@ -65,7 +65,7 @@ jobs:
       shell: powershell
 
     - name: Publish Artifact #Publish Artifacts to be consumed by the release pipeline
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v1
       with:
           name: drop
           path: D:\a\${{ env.repoName }}\upload
