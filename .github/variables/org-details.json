@@ -2,27 +2,27 @@
   "variables": [
     {
       "name": "cus_prefix",
-      "value": "mgr"
+      "value": "rah"
     },
     {
       "name": "team_suffix",
-      "value": "gc"
+      "value": "t4"
     },
     {
       "name": "subscriptionid",
-      "value": "f2e68202-1605-4760-aa3d-b9859a54acb2"
+      "value": "9abcdc8a-3f81-49e3-b017-706f14b126bc"
     },
     {
       "name": "repoName",
-      "value": "mgr-sh360-coupons-gc"
+      "value": "rah-mgr-sh360-coupons-t4"
     },
     {
       "name": "servicePrincipleObjId",
-      "value": "9db21127-9fe6-4c7a-8c81-a96cf53eef18"
+      "value": "d217ce42-a086-4518-ad90-1ea82ec9e288"
     },
     {
       "name": "servicePrincipleClientId",
-      "value": "d70e20ac-ae9f-41eb-9658-a5529122d709"
+      "value": "002a0d10-92d6-4ed1-bb0f-372c4b6827de"
     }
   ]
 }
