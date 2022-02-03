@@ -38,7 +38,7 @@ public class Coupon {
         return title;
     }
     public void setTitle(String title) {
-        this.title = title;
+        this.title = " ";
     }
     public String getDescription() {
         return description;
