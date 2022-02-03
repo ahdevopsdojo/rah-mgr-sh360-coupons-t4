@@ -4,10 +4,10 @@ name: Coupons-CI-Base
 #Triggers to run the workflow
 on:
   #TODO [CI]: Uncomment the below block to enable push & pull_request triggers on build workflow.
-  #push: #To trigger workflow when an update in pushed onto main branch
-  #  branches: [main]
-  #pull_request: #To trigger workflow when a PR is raised against main branch
-  #  branches: [main]
+  push: #To trigger workflow when an update in pushed onto main branch
+    branches: [main]
+  pull_request: #To trigger workflow when a PR is raised against main branch
+    branches: [main]
   workflow_dispatch:
     branches: [ main, users/** ]
 
@@ -24,7 +24,6 @@ jobs:
     #TODO [CI]: This action is used to send workflow status to subscribed Microsoft Teams channel. Remove the below if condition to enable the action
     - name: Microsoft Teams Deploy Card
       uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-      if: ${{ false }}
       with:
         # Microsoft Teams webhook URI
         webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
@@ -52,7 +51,6 @@ jobs:
 
     #TODO [CI]: This action is used to run unit tests in workflow. Remove the below if condition to enable the action
     - name: Test Maven Project #Run Unit Tests
-      if: ${{ false }}
       run: mvn test
       shell: bash
 
@@ -72,10 +70,9 @@ jobs:
 
     #TODO [CI]: This action is used to trigger the release workflow in dev environment. Replace the ${{ false }} with github.event_name != 'pull_request' to enable the below action
     - name: Trigger - Release to dev
-      if: ${{ false }} #github.event_name != 'pull_request'
+      if: github.event_name != 'pull_request'
       uses: benc-uk/workflow-dispatch@v1
       with:
         workflow: Coupons-CD-Base
         token: ${{ secrets.PAT }}
         inputs: '{ "environment": "dev" }'
-
