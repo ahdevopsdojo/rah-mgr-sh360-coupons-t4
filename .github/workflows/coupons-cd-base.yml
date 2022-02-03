@@ -674,4 +674,3 @@ jobs:
           workflow: Coupons-CD-Base
           token: ${{ secrets.PAT }}
           inputs: '{ "environment": "${{ env.trigger }}" }'
-
