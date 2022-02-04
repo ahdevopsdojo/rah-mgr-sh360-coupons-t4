@@ -567,7 +567,7 @@ jobs:
     #In the if condition below, replace the ${{ false }} with needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' to enable the below action   
     - name: Create ADO Bug on Failure for BDD Tests
       uses: JasonEtco/create-an-issue@v2
-      if: needs.BDD_Automated_Tests.outputs.bdd_status == 'failure'
+      if: always()
       env:
         GITHUB_TOKEN: ${{ secrets.PAT }} 
       with:
@@ -578,7 +578,7 @@ jobs:
     #In the if condition below, replace the ${{ false }} with needs.UI_Tests.outputs.ui_status == 'failure' to enable the below action   
     - name: Create ADO Bug on Failure for UI Tests
       uses: JasonEtco/create-an-issue@v2
-      if: needs.UI_Tests.outputs.ui_status == 'failure'
+      if: always()
       env:
         GITHUB_TOKEN: ${{ secrets.PAT }} 
       with:
