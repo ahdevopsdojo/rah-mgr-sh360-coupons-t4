@@ -276,155 +276,151 @@ jobs:
   #----------------------------------------------------------------------------------------------#
   #TODO [CQ]: BDD Automated Tests. Uncomment the below block to enable the BDD Automated Test Stage
 
-  #BDD_Automated_Tests:
-  #  needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
-  #  runs-on: windows-latest # The type of runner that the job will run on
-  #  outputs: # Outputs expected from release job to be used in other jobs
-  #    bdd_status: ${{ steps.bddtests.outcome }}
-  #  if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
-  #  steps:
-  #  - name: Checkout Repository #Checkout the Repository into the agent
-  #    uses: actions/checkout@v2
-  #
-  #  # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
-  #  - name: Download build artifacts
-  #    uses: dawidd6/action-download-artifact@v2
-  #    with:
-  #      workflow: coupons-ci-base.yml
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Organizational Details # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'org-details'
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Coupons All Stages # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'all-stages-coupon'
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
-  #
-  #  # This action is used to send workflow status to subscribed Microsoft Teams channel
-  #  - name: Microsoft Teams Deploy Card
-  #    uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-  #    if: always()
-  #    with:
-  #      # Microsoft Teams webhook URI
-  #      webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-  #      # Github token
-  #      github-token: ${{ github.token }}
-  #      # Name of the environment (won't be included in the card if none)
-  #      environment: ${{ needs.release.outputs.pipeline_env }}
-  #      # Show the MS Teams card upon failure only of this Github Actions job
-  #      show-on-failure: true
-  #      custom-facts: |
-  #        - name: Stage
-  #          value: BDD Automated Tests - ${{ needs.release.outputs.pipeline_env }}
-  #
-  #  #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action
-  #  - name: Update app config for BDD Tests
-  #    if: ${{ false }}
-  #    run: D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\IaC\scripts\UpdateVariablesAtRunTime.ps1 -configPath D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\main\resources\application.properties -keyVaultUri "https://${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}.vault.azure.net/" -instrumentationKey "123456" -sourceUrl "jdbc:mysql://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.mysql.database.azure.com:3306/hotel_coupon?verifyServerCertificate=false&useSSL=false&requireSSL=false" -appUrl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net" -principalId "${{ env.servicePrincipleClientId }}" -principalPass "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
-  #    shell: powershell
-  #
-  #  #TODO [CQ]: This action is used to execute BDD Tests. Remove the below if condition to enable the action
-  #  - name: Run BDD Tests
-  #    if: ${{ false }}
-  #    id: bddtests
-  #    run: mvn -B verify -Dit.test=CouponControllerBDDIT verify --file "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\pom.xml"
-  #    shell: bash
+  BDD_Automated_Tests:
+   needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
+   runs-on: windows-latest # The type of runner that the job will run on
+   outputs: # Outputs expected from release job to be used in other jobs
+     bdd_status: ${{ steps.bddtests.outcome }}
+   if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
+   steps:
+   - name: Checkout Repository #Checkout the Repository into the agent
+     uses: actions/checkout@v2
+  
+   # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
+   - name: Download build artifacts
+     uses: dawidd6/action-download-artifact@v2
+     with:
+       workflow: coupons-ci-base.yml
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Organizational Details # Set Variables
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'org-details'
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Coupons All Stages # Set Variables
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'all-stages-coupon'
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
+  
+   # This action is used to send workflow status to subscribed Microsoft Teams channel
+   - name: Microsoft Teams Deploy Card
+     uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+     if: always()
+     with:
+       # Microsoft Teams webhook URI
+       webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+       # Github token
+       github-token: ${{ github.token }}
+       # Name of the environment (won't be included in the card if none)
+       environment: ${{ needs.release.outputs.pipeline_env }}
+       # Show the MS Teams card upon failure only of this Github Actions job
+       show-on-failure: true
+       custom-facts: |
+         - name: Stage
+           value: BDD Automated Tests - ${{ needs.release.outputs.pipeline_env }}
+  
+   #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action
+   - name: Update app config for BDD Tests
+     run: D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\IaC\scripts\UpdateVariablesAtRunTime.ps1 -configPath D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\main\resources\application.properties -keyVaultUri "https://${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}.vault.azure.net/" -instrumentationKey "123456" -sourceUrl "jdbc:mysql://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.mysql.database.azure.com:3306/hotel_coupon?verifyServerCertificate=false&useSSL=false&requireSSL=false" -appUrl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net" -principalId "${{ env.servicePrincipleClientId }}" -principalPass "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
+     shell: powershell
+  
+   #TODO [CQ]: This action is used to execute BDD Tests. Remove the below if condition to enable the action
+   - name: Run BDD Tests
+     id: bddtests
+     run: mvn -B verify -Dit.test=CouponControllerBDDIT verify --file "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\pom.xml"
+     shell: bash
 
-  #----------------------------------------------------------------------------------------------#
-  #TODO [CQ]: UI Tests. Uncomment the below block to enable the UI Tests Stage
+  ----------------------------------------------------------------------------------------------#
+  TODO [CQ]: UI Tests. Uncomment the below block to enable the UI Tests Stage
 
-  #UI_Tests:
-  #  needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
-  #  runs-on: windows-latest # The type of runner that the job will run on
-  #  outputs: # Outputs expected from release job to be used in other jobs
-  #    ui_status: ${{ steps.uitests.outcome }}
-  #  if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
-  #  steps:
-  #  - name: Checkout Repository #Checkout the Repository into the agent
-  #    uses: actions/checkout@v2
-  #
-  #  # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
-  #  - name: Download build artifacts
-  #    uses: dawidd6/action-download-artifact@v2
-  #    with:
-  #      workflow: coupons-ci-base.yml
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Organizational Details # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'org-details'
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Coupons All Stages # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'all-stages-coupon'
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
-  #
-  #  # This action is used to send workflow status to subscribed Microsoft Teams channel
-  #  - name: Microsoft Teams Deploy Card
-  #    uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-  #    if: always()
-  #    with:
-  #      # Microsoft Teams webhook URI
-  #      webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-  #      # Github token
-  #      github-token: ${{ github.token }}
-  #      # Name of the environment (won't be included in the card if none)
-  #      environment: ${{ needs.release.outputs.pipeline_env }}
-  #      # Show the MS Teams card upon failure only of this Github Actions job
-  #      show-on-failure: true
-  #      custom-facts: |
-  #        - name: Stage
-  #          value: UI Tests - ${{ needs.release.outputs.pipeline_env }}
-  #
-  #  - name: Setup NuGet # This action downloads and installs a given version of NuGet.exe
-  #    uses: NuGet/setup-nuget@v1.0.5
-  #    with:
-  #      nuget-version: latest
-  #
-  #  # This action installs/updates the chrome version to the latest version in the agent
-  #  - name: Update Chrome Version
-  #    run: |
-  #      $theurl = "http://dl.google.com/edgedl/chrome/install/GoogleChromeStandaloneEnterprise64.msi"
-  #      mkdir c:\tmp
-  #      $output = "c:\tmp\chrome.msi"
-  #      Invoke-WebRequest -Uri $theurl -OutFile $output -ErrorAction SilentlyContinue
-  #      msiexec /q /i c:\tmp\chrome.msi
-  #      start-sleep -Seconds 120 # sleep for 5 mins just to allow updates to be processed
-  #      Remove-Item -Path c:\tmp\chrome.msi -Force
-  #      nuget install Selenium.WebDriver.ChromeDriver -ExcludeVersion
-  #      Copy-Item D:\a\${{ env.repoName }}\${{ env.repoName }}\Selenium.WebDriver.ChromeDriver\driver\win32\chromedriver.exe D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\test\resources\binaries -force
-  #    shell: powershell
-  #
-  #  #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action
-  #  - name: Update app config for UI Tests
-  #    if: ${{ false }}
-  #    run: D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\IaC\scripts\UpdateVariablesAtRunTime.ps1 -configPath D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\main\resources\application.properties -keyVaultUri "https://${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}.vault.azure.net/" -instrumentationKey "83a016af-e6ca-452d-a624-0dbf47011e2d" -sourceUrl "jdbc:mysql://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.mysql.database.azure.com:3306/hotel_coupon?verifyServerCertificate=false&useSSL=false&requireSSL=false" -appUrl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net" -principalId "${{ env.servicePrincipleClientId }}" -principalPass "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
-  #    shell: powershell
-  #
-  #  #TODO [CQ]: This action is used to execute UI Tests. Remove the below if condition to enable the action
-  #  - name: Run UI Test
-  #    if: ${{ false }}
-  #    id: uitests
-  #    run: mvn -B verify -Dit.test=LoginUIIT#testInQA* verify --file "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\pom.xml"
-  #    shell: bash
+  UI_Tests:
+   needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
+   runs-on: windows-latest # The type of runner that the job will run on
+   outputs: # Outputs expected from release job to be used in other jobs
+     ui_status: ${{ steps.uitests.outcome }}
+   if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
+   steps:
+   - name: Checkout Repository #Checkout the Repository into the agent
+     uses: actions/checkout@v2
+  
+   # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
+   - name: Download build artifacts
+     uses: dawidd6/action-download-artifact@v2
+     with:
+       workflow: coupons-ci-base.yml
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Organizational Details # Set Variables
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'org-details'
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Coupons All Stages # Set Variables
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'all-stages-coupon'
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
+  
+   # This action is used to send workflow status to subscribed Microsoft Teams channel
+   - name: Microsoft Teams Deploy Card
+     uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+     if: always()
+     with:
+       # Microsoft Teams webhook URI
+       webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+       # Github token
+       github-token: ${{ github.token }}
+       # Name of the environment (won't be included in the card if none)
+       environment: ${{ needs.release.outputs.pipeline_env }}
+       # Show the MS Teams card upon failure only of this Github Actions job
+       show-on-failure: true
+       custom-facts: |
+         - name: Stage
+           value: UI Tests - ${{ needs.release.outputs.pipeline_env }}
+  
+   - name: Setup NuGet # This action downloads and installs a given version of NuGet.exe
+     uses: NuGet/setup-nuget@v1.0.5
+     with:
+       nuget-version: latest
+  
+   # This action installs/updates the chrome version to the latest version in the agent
+   - name: Update Chrome Version
+     run: |
+       $theurl = "http://dl.google.com/edgedl/chrome/install/GoogleChromeStandaloneEnterprise64.msi"
+       mkdir c:\tmp
+       $output = "c:\tmp\chrome.msi"
+       Invoke-WebRequest -Uri $theurl -OutFile $output -ErrorAction SilentlyContinue
+       msiexec /q /i c:\tmp\chrome.msi
+       start-sleep -Seconds 120 # sleep for 5 mins just to allow updates to be processed
+       Remove-Item -Path c:\tmp\chrome.msi -Force
+       nuget install Selenium.WebDriver.ChromeDriver -ExcludeVersion
+       Copy-Item D:\a\${{ env.repoName }}\${{ env.repoName }}\Selenium.WebDriver.ChromeDriver\driver\win32\chromedriver.exe D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\test\resources\binaries -force
+     shell: powershell
+  
+   #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action
+   - name: Update app config for UI Tests
+     run: D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\IaC\scripts\UpdateVariablesAtRunTime.ps1 -configPath D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\main\resources\application.properties -keyVaultUri "https://${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}.vault.azure.net/" -instrumentationKey "83a016af-e6ca-452d-a624-0dbf47011e2d" -sourceUrl "jdbc:mysql://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.mysql.database.azure.com:3306/hotel_coupon?verifyServerCertificate=false&useSSL=false&requireSSL=false" -appUrl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net" -principalId "${{ env.servicePrincipleClientId }}" -principalPass "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
+     shell: powershell
+  
+   #TODO [CQ]: This action is used to execute UI Tests. Remove the below if condition to enable the action
+   - name: Run UI Test
+     id: uitests
+     run: mvn -B verify -Dit.test=LoginUIIT#testInQA* verify --file "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\pom.xml"
+     shell: bash
 
   #----------------------------------------------------------------------------------------------#
   #TODO [CS]: AZSK Scan. Uncomment the below block of code to enable AZSK Scan stage
@@ -558,36 +554,36 @@ jobs:
   #----------------------------------------------------------------------------------------------#
   #TODO [CQ]: Issues Creation. Uncomment the below block to enable the Issues Creation Stage.
 
-  #Issues_Creation:
-  #  needs: [BDD_Automated_Tests,UI_Tests] # This ensures this stage runs after BDD & UI Test stages run
-  #  # This condition ensures this stage only runs if either BDD or UI Test fails
-  #  if: always() && (needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' || needs.UI_Tests.outputs.ui_status == 'failure')
-  #  runs-on: ubuntu-latest # The type of runner that the job will run on
-  #  steps:
-  #  - name: Checkout Repository #Checkout the Repository into the agent
-  #    uses: actions/checkout@v2
-  #
-  #  #TODO [CQ]: This action creates an issue in GitHub if BDD Tests fail.
-  #  #In the if condition below, replace the ${{ false }} with needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' to enable the below action
-  #  - name: Create ADO Bug on Failure for BDD Tests
-  #    uses: JasonEtco/create-an-issue@v2
-  #    if: ${{ false }} #needs.BDD_Automated_Tests.outputs.bdd_status == 'failure'
-  #    env:
-  #      GITHUB_TOKEN: ${{ secrets.PAT }}
-  #    with:
-  #      filename: .github/issues/bdd-issue-template.md
-  #      update_existing: true
-  #
-  #  #TODO [CQ]: This action creates an issue in GitHub if UI Tests fail.
-  #  #In the if condition below, replace the ${{ false }} with needs.UI_Tests.outputs.ui_status == 'failure' to enable the below action
-  #  - name: Create ADO Bug on Failure for UI Tests
-  #    uses: JasonEtco/create-an-issue@v2
-  #    if: ${{ false }} #needs.UI_Tests.outputs.ui_status == 'failure'
-  #    env:
-  #      GITHUB_TOKEN: ${{ secrets.PAT }}
-  #    with:
-  #      filename: .github/issues/ui-issue-template.md
-  #      update_existing: true
+  Issues_Creation:
+   needs: [BDD_Automated_Tests,UI_Tests] # This ensures this stage runs after BDD & UI Test stages run
+   # This condition ensures this stage only runs if either BDD or UI Test fails
+   if: always() && (needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' || needs.UI_Tests.outputs.ui_status == 'failure')
+   runs-on: ubuntu-latest # The type of runner that the job will run on
+   steps:
+   - name: Checkout Repository #Checkout the Repository into the agent
+     uses: actions/checkout@v2
+  
+   #TODO [CQ]: This action creates an issue in GitHub if BDD Tests fail.
+   #In the if condition below, replace the ${{ false }} with needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' to enable the below action
+   - name: Create ADO Bug on Failure for BDD Tests
+     uses: JasonEtco/create-an-issue@v2
+     if: needs.BDD_Automated_Tests.outputs.bdd_status == 'failure'
+     env:
+       GITHUB_TOKEN: ${{ secrets.PAT }}
+     with:
+       filename: .github/issues/bdd-issue-template.md
+       update_existing: true
+  
+   #TODO [CQ]: This action creates an issue in GitHub if UI Tests fail.
+   #In the if condition below, replace the ${{ false }} with needs.UI_Tests.outputs.ui_status == 'failure' to enable the below action
+   - name: Create ADO Bug on Failure for UI Tests
+     uses: JasonEtco/create-an-issue@v2
+     if: needs.UI_Tests.outputs.ui_status == 'failure'
+     env:
+       GITHUB_TOKEN: ${{ secrets.PAT }}
+     with:
+       filename: .github/issues/ui-issue-template.md
+       update_existing: true
 
   #----------------------------------------------------------------------------------------------#
 
