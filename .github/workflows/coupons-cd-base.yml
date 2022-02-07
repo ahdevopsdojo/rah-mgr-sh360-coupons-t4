@@ -338,8 +338,8 @@ jobs:
      run: mvn -B verify -Dit.test=CouponControllerBDDIT verify --file "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\pom.xml"
      shell: bash
 
-  ----------------------------------------------------------------------------------------------#
-  TODO [CQ]: UI Tests. Uncomment the below block to enable the UI Tests Stage
+
+  #TODO [CQ]: UI Tests. Uncomment the below block to enable the UI Tests Stage
 
   UI_Tests:
    needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
