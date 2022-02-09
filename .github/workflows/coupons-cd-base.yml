@@ -425,131 +425,129 @@ jobs:
   #----------------------------------------------------------------------------------------------#
   #TODO [CS]: AZSK Scan. Uncomment the below block of code to enable AZSK Scan stage
 
-  #AZSK_Scan:
-  #  needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
-  #  runs-on: windows-latest # The type of runner that the job will run on
-  #  steps:
-  #  - name: Checkout Repository #Checkout the Repository into the agent
-  #    uses: actions/checkout@v2
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Organizational Details # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'org-details'
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Coupons All Stages # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'all-stages-coupon'
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
-  #
-  #  # This action is used to send workflow status to subscribed Microsoft Teams channel
-  #  - name: Microsoft Teams Deploy Card
-  #    uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-  #    if: always()
-  #    with:
-  #      # Microsoft Teams webhook URI
-  #      webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-  #      # Github token
-  #      github-token: ${{ github.token }}
-  #      # Name of the environment (won't be included in the card if none)
-  #      environment: ${{ needs.release.outputs.pipeline_env }}
-  #      # Show the MS Teams card upon failure only of this Github Actions job
-  #      show-on-failure: true
-  #      custom-facts: |
-  #        - name: Stage
-  #          value: AZSK Scan - ${{ needs.release.outputs.pipeline_env }}
-  #
-  #  - name: Login via Az module # Login to Azure with credentials of service principal stored in secrets
-  #    uses: azure/login@v1.1
-  #    with:
-  #      creds: ${{ secrets.AZURE_CREDENTIALS }}
-  #      enable-AzPSSession: true
-  #
-  #  #TODO [CS]: This action is used to run AZSK Tests on azure resources of a particular environment. Remove the below if condition to enable the action
-  #  - name: Install Az-Sk Module and Run AzSK Security Verification Tests
-  #    if: ${{ false }}
-  #    run: |
-  #      Install-Module AzSK -AllowClobber -SkipPublisherCheck -Force
-  #      Import-Module AzSK
-  #      (ECHO Y | powershell Get-AzSKAzureServicesSecurityStatus -SubscriptionId  '${{ env.subscriptionid }}' -ResourceGroupNames '${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}' -DoNotOpenOutputFolder)
-  #      New-Item -Path "D:\a\${{ env.repoName }}\" -Name "upload" -ItemType "directory"
-  #      $destinationRoot = "D:\a\${{ env.repoName }}\upload\AzSk.zip"
-  #      Compress-Archive -LiteralPath ${{ env.az_sk_path }} -DestinationPath $destinationRoot
-  #    shell: powershell
-  #
-  #  # This action is used to publish the AZSK Results as artifacts.
-  #  - name: Publish AzSK Results #Publish Artifact
-  #    uses: actions/upload-artifact@master
-  #    with:
-  #        name: azsk
-  #        path: D:\a\${{ env.repoName }}\upload
+  AZSK_Scan:
+   needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
+   runs-on: windows-latest # The type of runner that the job will run on
+   steps:
+   - name: Checkout Repository #Checkout the Repository into the agent
+     uses: actions/checkout@v2
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Organizational Details # Set Variables
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'org-details'
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Coupons All Stages # Set Variables
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'all-stages-coupon'
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
+  
+   # This action is used to send workflow status to subscribed Microsoft Teams channel
+   - name: Microsoft Teams Deploy Card
+     uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+     if: always()
+     with:
+       # Microsoft Teams webhook URI
+       webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+       # Github token
+       github-token: ${{ github.token }}
+       # Name of the environment (won't be included in the card if none)
+       environment: ${{ needs.release.outputs.pipeline_env }}
+       # Show the MS Teams card upon failure only of this Github Actions job
+       show-on-failure: true
+       custom-facts: |
+         - name: Stage
+           value: AZSK Scan - ${{ needs.release.outputs.pipeline_env }}
+  
+   - name: Login via Az module # Login to Azure with credentials of service principal stored in secrets
+     uses: azure/login@v1.1
+     with:
+       creds: ${{ secrets.AZURE_CREDENTIALS }}
+       enable-AzPSSession: true
+  
+   #TODO [CS]: This action is used to run AZSK Tests on azure resources of a particular environment. Remove the below if condition to enable the action
+   - name: Install Az-Sk Module and Run AzSK Security Verification Tests
+     run: |
+       Install-Module AzSK -AllowClobber -SkipPublisherCheck -Force
+       Import-Module AzSK
+       (ECHO Y | powershell Get-AzSKAzureServicesSecurityStatus -SubscriptionId  '${{ env.subscriptionid }}' -ResourceGroupNames '${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}' -DoNotOpenOutputFolder)
+       New-Item -Path "D:\a\${{ env.repoName }}\" -Name "upload" -ItemType "directory"
+       $destinationRoot = "D:\a\${{ env.repoName }}\upload\AzSk.zip"
+       Compress-Archive -LiteralPath ${{ env.az_sk_path }} -DestinationPath $destinationRoot
+     shell: powershell
+  
+   # This action is used to publish the AZSK Results as artifacts.
+   - name: Publish AzSK Results #Publish Artifact
+     uses: actions/upload-artifact@master
+     with:
+         name: azsk
+         path: D:\a\${{ env.repoName }}\upload
 
   #----------------------------------------------------------------------------------------------#
   #TODO [CS]: OWASP Scan. Uncomment the below block to enable OWASP Scan stage
 
-  #OWASP_Scan:
-  #  needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
-  #  runs-on: ubuntu-latest # The type of runner that the job will run on
-  #  outputs: # Outputs expected from release job to be used in other jobs
-  #    owasp_status: ${{ steps.owasptests.outcome }}
-  #  steps:
-  #  - name: Checkout Repository #Checkout the Repository into the agent
-  #    uses: actions/checkout@v2
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Organizational Details # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'org-details'
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Coupons All Stages # Set Variables
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'all-stages-coupon'
-  #
-  #  # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-  #  - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
-  #    uses: ./.github/actions/set-variable
-  #    with:
-  #      variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
-  #
-  #  # This action is used to send workflow status to subscribed Microsoft Teams channel
-  #  - name: Microsoft Teams Deploy Card
-  #    uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-  #    if: always()
-  #    with:
-  #      # Microsoft Teams webhook URI
-  #      webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-  #      # Github token
-  #      github-token: ${{ github.token }}
-  #      # Name of the environment (won't be included in the card if none)
-  #      environment: ${{ needs.release.outputs.pipeline_env }}
-  #      # Show the MS Teams card upon failure only of this Github Actions job
-  #      show-on-failure: true
-  #      custom-facts: |
-  #        - name: Stage
-  #          value: OWASP Scan - ${{ needs.release.outputs.pipeline_env }}
-  #
-  #  #TODO [CS]: This action is used to execute OWASP ZAP scan on the deployed coupons application. Remove the below if condition to enable the action
-  #  - name: OWASP ZAP Full Scan
-  #    if: ${{ false }}
-  #    id: owasptests
-  #    uses: zaproxy/action-full-scan@v0.2.0
-  #    with:
-  #      # Target URL
-  #      target: "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net"
-  #      # The action status will be set to fail if ZAP identifies any alerts during the full scan
-  #      fail_action: false
-  #      issue_title: "ZAP Scan - ${{ needs.release.outputs.pipeline_env }}"
+  OWASP_Scan:
+   needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
+   runs-on: ubuntu-latest # The type of runner that the job will run on
+   outputs: # Outputs expected from release job to be used in other jobs
+     owasp_status: ${{ steps.owasptests.outcome }}
+   steps:
+   - name: Checkout Repository #Checkout the Repository into the agent
+     uses: actions/checkout@v2
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Organizational Details # Set Variables
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'org-details'
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Coupons All Stages # Set Variables
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'all-stages-coupon'
+  
+   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+   - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
+     uses: ./.github/actions/set-variable
+     with:
+       variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
+  
+   # This action is used to send workflow status to subscribed Microsoft Teams channel
+   - name: Microsoft Teams Deploy Card
+     uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+     if: always()
+     with:
+       # Microsoft Teams webhook URI
+       webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+       # Github token
+       github-token: ${{ github.token }}
+       # Name of the environment (won't be included in the card if none)
+       environment: ${{ needs.release.outputs.pipeline_env }}
+       # Show the MS Teams card upon failure only of this Github Actions job
+       show-on-failure: true
+       custom-facts: |
+         - name: Stage
+           value: OWASP Scan - ${{ needs.release.outputs.pipeline_env }}
+  
+   #TODO [CS]: This action is used to execute OWASP ZAP scan on the deployed coupons application. Remove the below if condition to enable the action
+   - name: OWASP ZAP Full Scan
+     id: owasptests
+     uses: zaproxy/action-full-scan@v0.2.0
+     with:
+       # Target URL
+       target: "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net"
+       # The action status will be set to fail if ZAP identifies any alerts during the full scan
+       fail_action: false
+       issue_title: "ZAP Scan - ${{ needs.release.outputs.pipeline_env }}"
 
   #----------------------------------------------------------------------------------------------#
   #TODO [CQ]: Issues Creation. Uncomment the below block to enable the Issues Creation Stage.
