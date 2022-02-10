@@ -4,12 +4,12 @@ name: Coupons-CD-Base
 #Triggers to run the workflow
 on:
   workflow_dispatch:
-    branches: [main, users/**]
+    branches: [ main, users/** ]
     inputs:
       environment:
-        description: "Environment to release"
+        description: 'Environment to release'
         required: true
-        default: "dev"
+        default: 'dev'
 
 jobs:
   # Release Job
@@ -22,647 +22,646 @@ jobs:
     environment: # Environment to which the application will be deployed.
       name: ${{ github.event.inputs.environment }}
     steps:
-      # Assign env value based on trigger conditions
-      - name: Assign Environment based on conditions
-        shell: bash
-        id: assignenv
-        run: |
-          if [ -z ${{ github.event.client_payload.event_type }} ] && [ -z ${{ github.event.inputs.environment }} ]; then
-            echo "pipeline_env=dev" >> $GITHUB_ENV
-            echo "::set-output name=env::dev"
-            echo "This release was triggered by Build Pipeline"
-          elif [ -z ${{ github.event.client_payload.event_type }} ]; then
-            echo "pipeline_env=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
-            echo "::set-output name=env::${{ github.event.inputs.environment }}"
-            echo "This release was triggered manually"
-          else
-            echo "pipeline_env=${{ github.event.client_payload.event_type }}" >> $GITHUB_ENV
-            echo "::set-output name=env::${{ github.event.client_payload.event_type }}"
-            echo "This release was triggered automatically"
-          fi
+    # Assign env value based on trigger conditions
+    - name: Assign Environment based on conditions
+      shell: bash
+      id: assignenv
+      run: |
+        if [ -z ${{ github.event.client_payload.event_type }} ] && [ -z ${{ github.event.inputs.environment }} ]; then
+          echo "pipeline_env=dev" >> $GITHUB_ENV
+          echo "::set-output name=env::dev"
+          echo "This release was triggered by Build Pipeline"
+        elif [ -z ${{ github.event.client_payload.event_type }} ]; then
+          echo "pipeline_env=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+          echo "::set-output name=env::${{ github.event.inputs.environment }}"
+          echo "This release was triggered manually"
+        else
+          echo "pipeline_env=${{ github.event.client_payload.event_type }}" >> $GITHUB_ENV
+          echo "::set-output name=env::${{ github.event.client_payload.event_type }}"
+          echo "This release was triggered automatically"
+        fi
 
-      - name: Checkout Repository #Checkout the Repo into the agent
-        uses: actions/checkout@v2
+    - name: Checkout Repository #Checkout the Repo into the agent
+      uses: actions/checkout@v2
 
-      # This action is used to send workflow status to subscribed Microsoft Teams channel
-      - name: Microsoft Teams Deploy Card
-        uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-        if: always()
-        with:
-          # Microsoft Teams webhook URI
-          webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-          # Github token
-          github-token: ${{ github.token }}
-          # Name of the environment (won't be included in the card if none)
-          environment: ${{ env.pipeline_env }}
-          # Show the MS Teams card upon failure only of this Github Actions job
-          show-on-failure: true
-          custom-facts: |
-            - name: Stage
-              value: Release to ${{ env.pipeline_env }}
+    # This action is used to send workflow status to subscribed Microsoft Teams channel
+    - name: Microsoft Teams Deploy Card
+      uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+      if: always()
+      with:
+        # Microsoft Teams webhook URI
+        webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+        # Github token
+        github-token: ${{ github.token }}
+        # Name of the environment (won't be included in the card if none)
+        environment: ${{ env.pipeline_env }}
+        # Show the MS Teams card upon failure only of this Github Actions job
+        show-on-failure: true
+        custom-facts: |
+          - name: Stage
+            value: Release to ${{ env.pipeline_env }}
 
-      # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
-      - name: Download build artifacts
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          workflow: coupons-ci-base.yml
-          path: $GITHUB_WORKSPACE
+    # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
+    - name: Download build artifacts
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: coupons-ci-base.yml
+        path: $GITHUB_WORKSPACE
 
-      # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-      - name: Set Environment Variables - Organizational Details # Set Variables
-        uses: ./.github/actions/set-variable
-        with:
-          variableFileName: "org-details"
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Organizational Details # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'org-details'
 
-      # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-      - name: Set Environment Variables - Coupons All Stages # Set Variables
-        uses: ./.github/actions/set-variable
-        with:
-          variableFileName: "all-stages-coupon"
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Coupons All Stages # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'all-stages-coupon'
 
-      # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-      - name: Set Environment Variables - Coupons ${{ env.pipeline_env }} # Set Variables based on environment
-        uses: ./.github/actions/set-variable
-        with:
-          variableFileName: "coupon-${{ env.pipeline_env }}"
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Coupons ${{ env.pipeline_env }} # Set Variables based on environment
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'coupon-${{ env.pipeline_env }}'
 
-      #TODO [CD]: This action is used to initiate a deployment in a particular environment. Remove the below if condition to enable the action
-      - name: Create GitHub deployment for deployment-${{ env.pipeline_env }}
-        uses: chrnorm/deployment-action@releases/v1
-        id: deployment
-        with:
-          token: "${{ github.token }}"
-          target_url: https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net
-          environment: ${{ env.pipeline_env }}
+    #TODO [CD]: This action is used to initiate a deployment in a particular environment. Remove the below if condition to enable the action
+    - name: Create GitHub deployment for deployment-${{ env.pipeline_env }}
+      uses: chrnorm/deployment-action@releases/v1
+      id: deployment
+      with:
+        token: "${{ github.token }}"
+        target_url: https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net
+        environment: ${{ env.pipeline_env }}
+        
+    - name: Login to Azure # Login to Azure with credentials of service principal stored in secrets
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Login to Azure # Login to Azure with credentials of service principal stored in secrets
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: Create Resource # Create Resource Group using azure cli commands
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az group create --name "${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}" --location "${{ env.location }}"
 
-      - name: Create Resource # Create Resource Group using azure cli commands
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az group create --name "${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}" --location "${{ env.location }}"
+    - name: Provision MySQL # Provision MySQL - ARM Template deployment
+      uses: Azure/arm-deploy@main
+      with:
+        scope: 'resourcegroup'
+        subscriptionId: '${{ env.subscriptionid }}'
+        resourceGroupName: '${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}'
+        template: '$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/mysqlserver.deploy.json'
+        deploymentMode: Incremental
+        parameters: 'mySQLAdminLoginName="${{ env.mySQLAdminLoginName }}" mySQLAdminLoginPassword="${{ secrets.mysqlsecretPassword }}" mySQLServerName="${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}"' 
 
-      - name: Provision MySQL # Provision MySQL - ARM Template deployment
-        uses: Azure/arm-deploy@main
-        with:
-          scope: "resourcegroup"
-          subscriptionId: "${{ env.subscriptionid }}"
-          resourceGroupName: "${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}"
-          template: "$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/mysqlserver.deploy.json"
-          deploymentMode: Incremental
-          parameters: 'mySQLAdminLoginName="${{ env.mySQLAdminLoginName }}" mySQLAdminLoginPassword="${{ secrets.mysqlsecretPassword }}" mySQLServerName="${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}"'
+    - name: Provision Application Insights # Provision App Insights - ARM Template deployment
+      uses: Azure/arm-deploy@main
+      id: AppInsightsOutput
+      with:
+        scope: 'resourcegroup'
+        subscriptionId: '${{ env.subscriptionid }}'
+        resourceGroupName: '${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}'
+        template: '$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/x_app_insights.json'
+        deploymentMode: Incremental
+        parameters: 'appName="${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}"' 
 
-      - name: Provision Application Insights # Provision App Insights - ARM Template deployment
-        uses: Azure/arm-deploy@main
-        id: AppInsightsOutput
-        with:
-          scope: "resourcegroup"
-          subscriptionId: "${{ env.subscriptionid }}"
-          resourceGroupName: "${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}"
-          template: "$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/x_app_insights.json"
-          deploymentMode: Incremental
-          parameters: 'appName="${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}"'
+    - name: Provision App Service # Provision App Service - ARM Template deployment
+      uses: Azure/arm-deploy@main
+      id: armAppServiceOutput
+      with:
+        scope: 'resourcegroup'
+        subscriptionId: '${{ env.subscriptionid }}'
+        resourceGroupName: '${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}'
+        template: '$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/appservice.co.deploy.json'
+        deploymentMode: Incremental
+        parameters: 'webAppName="${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}" mySQLServerName="${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}" instrumentationkey="${{ steps.AppInsightsOutput.outputs.instrumentation_key}}" keyVaultName="${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}"' 
 
-      - name: Provision App Service # Provision App Service - ARM Template deployment
-        uses: Azure/arm-deploy@main
-        id: armAppServiceOutput
-        with:
-          scope: "resourcegroup"
-          subscriptionId: "${{ env.subscriptionid }}"
-          resourceGroupName: "${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}"
-          template: "$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/appservice.co.deploy.json"
-          deploymentMode: Incremental
-          parameters: 'webAppName="${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}" mySQLServerName="${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}" instrumentationkey="${{ steps.AppInsightsOutput.outputs.instrumentation_key}}" keyVaultName="${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}"'
+    - name: Create Log Analytics Workspace Resource Group # Create LAW Resource Group using azure cli commands
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az group create --name "${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" --location "${{ env.location }}"    
 
-      - name: Create Log Analytics Workspace Resource Group # Create LAW Resource Group using azure cli commands
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az group create --name "${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" --location "${{ env.location }}"
-
-      - name: Provision Log Analytics Workspace # Provision Log Analytics Wrokspace using azure cli commands
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az deployment group create --name Provision_Log_Analytics_Workspace --resource-group "${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" --template-file IaC/templates/log.analytics.deploy.json --parameters IaC/templates/log.analytics.parameters.json logAnalyticsWorkspaceName="${{ env.cus_prefix }}${{ env.logAnalyticsWorkspaceName }}${{ env.team_suffix }}" serviceTier="PerNode" dataRetention=365 location="${{ env.rglocationFull }}" diagnosticStorageAccountName="${{ env.cus_prefix }}${{ env.diagnosticStorageAccountName }}${{ env.team_suffix }}" storageAccountKind="Storage" storageAccountSku="Standard_GRS"
-
-      - name: Provision Key Vault # Provision Key Vault - ARM Template deployment
-        uses: Azure/arm-deploy@main
-        id: keyvaultarmoutput
-        with:
-          scope: "resourcegroup"
-          subscriptionId: "${{ env.subscriptionid }}"
-          resourceGroupName: "${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}"
-          template: "$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/key.vault.deploy.json"
-          deploymentMode: Incremental
-          parameters: '$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/key.vault.parameters.json keyVaultName="${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" logsRetentionInDays=30 enableVaultForDeployment=true enableVaultForTemplateDeployment=true enableVaultForDiskEncryption=true vaultSku="${{ env.vaultsku }}" diagnosticStorageAccountName="${{ env.cus_prefix }}${{ env.diagnosticStorageAccountName }}${{ env.team_suffix }}" diagnosticStorageAccountRG="${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" logAnalyticsWorkspaceResourceGroup="${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" logAnalyticsWorkspaceName="${{ env.cus_prefix }}${{ env.logAnalyticsWorkspaceName }}${{ env.team_suffix }}"'
-
-      - name: Update Access Policy and Secrets in Key Vault # Update Access Policy and Secrets in Key Vault using azure cli commands
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az keyvault set-policy --name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --object-id "${{ steps.armAppServiceOutput.outputs.objectId }}" --secret-permissions get list
-            az keyvault set-policy --name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --object-id "${{ env.servicePrincipleObjId }}" --secret-permissions get list set
-            az keyvault secret set --vault-name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --name "spring-datasource-username" --value "${{ env.mySQLAdminLoginName }}@${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}"
-            az keyvault secret set --vault-name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --name "spring-datasource-password" --value "${{ secrets.mysqlsecretPassword }}"
-            az keyvault secret set --vault-name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --name "azure-keyvault-client-id" --value "${{ env.servicePrincipleClientId }}"
-            az keyvault secret set --vault-name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --name "azure-keyvault-client-key" --value "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
-
-      - name: Create Resource Group - Local Dev Setup # Create Resource Group using azure cli commands
-        if: env.pipeline_env == 'dev'
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az group create --name "${{ env.cus_prefix }}-Dojo-Coupon-Local-${{ env.team_suffix }}" --location "${{ env.location }}"
-
-      - name: Provision Key Vault - Local Setup # Provision Key Vault - Local Setup - ARM Template deployment
-        if: env.pipeline_env == 'dev'
-        uses: Azure/arm-deploy@main
-        with:
-          scope: "resourcegroup"
-          subscriptionId: "${{ env.subscriptionid }}"
-          resourceGroupName: "${{ env.cus_prefix }}-Dojo-Coupon-Local-${{ env.team_suffix }}"
-          template: "$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/key.vault.deploy.json"
-          deploymentMode: Incremental
-          parameters: '$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/key.vault.parameters.json keyVaultName="${{ env.cus_prefix }}-coupons-${{ env.team_suffix }}" logsRetentionInDays=30 enableVaultForDeployment=true enableVaultForTemplateDeployment=true enableVaultForDiskEncryption=true vaultSku="${{ env.vaultsku }}" diagnosticStorageAccountName="${{ env.cus_prefix }}${{ env.diagnosticStorageAccountName }}${{ env.team_suffix }}" diagnosticStorageAccountRG="${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" logAnalyticsWorkspaceResourceGroup="${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" logAnalyticsWorkspaceName="${{ env.cus_prefix }}${{ env.logAnalyticsWorkspaceName }}${{ env.team_suffix }}"'
-
-      - name: Update Access Policy and Secrets in Key Vault - Local Setup # Update Access Policy and Secrets in Key Vault - Local Setup - using azure cli commands
-        if: env.pipeline_env == 'dev'
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az keyvault set-policy --name "${{ env.cus_prefix }}-coupons-${{ env.team_suffix }}" --object-id "${{ steps.armAppServiceOutput.outputs.objectId }}" --secret-permissions get list
-            az keyvault set-policy --name "${{ env.cus_prefix }}-coupons-${{ env.team_suffix }}" --object-id "${{ env.servicePrincipleObjId }}" --secret-permissions get list set delete restore
-            az keyvault secret set --vault-name "${{ env.cus_prefix }}-coupons-${{ env.team_suffix }}" --name "spring-datasource-username" --value "${{ env.mySQLAdminLoginName }}@${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}"
-            az keyvault secret set --vault-name "${{ env.cus_prefix }}-coupons-${{ env.team_suffix }}" --name "spring-datasource-password" --value "${{ secrets.mysqlsecretPassword }}"
-
-      #TODO [CO]: Below 3 steps are used to get AppInsights API Id & API Key for PRD environment only, which is used in the last stage of Release_to_Next_Env
-      #to query AppInsights Availability and Latency of PRD environment and ensuring the environment is running as expected.
-      #Uncomment the below 3 actions to enable the steps to get API Key and store is as a secret.
-
-      - name: Generate AppInsights API Key # Generating AppInsights API Key using azure cli commands
-       uses: azure/CLI@1.0.4
-       if: env.pipeline_env == 'prd'
-       id: appinsights_key
-       continue-on-error: true
-       with:
-         inlineScript: |
-           az config set extension.use_dynamic_install=yes_without_prompt
-           output=$(az monitor app-insights api-key create --api-key mgr-slo --read-properties ReadTelemetry -g '${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}' --app '${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}' | jq .apiKey | tr -d '"')
-           echo ::set-output name=key::$output
+    - name: Provision Log Analytics Workspace # Provision Log Analytics Wrokspace using azure cli commands
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az deployment group create --name Provision_Log_Analytics_Workspace --resource-group "${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" --template-file IaC/templates/log.analytics.deploy.json --parameters IaC/templates/log.analytics.parameters.json logAnalyticsWorkspaceName="${{ env.cus_prefix }}${{ env.logAnalyticsWorkspaceName }}${{ env.team_suffix }}" serviceTier="PerNode" dataRetention=365 location="${{ env.rglocationFull }}" diagnosticStorageAccountName="${{ env.cus_prefix }}${{ env.diagnosticStorageAccountName }}${{ env.team_suffix }}" storageAccountKind="Storage" storageAccountSku="Standard_GRS"
       
-      - name: Create SLO_API_KEY Secret
-       uses: gliech/create-github-secret-action@v1
-       if: env.pipeline_env == 'prd' && steps.appinsights_key.outputs.key != ''
-       with:
-         name: SLO_API_KEY
-         value: ${{ steps.appinsights_key.outputs.key }}
-         pa_token: ${{ secrets.PAT }}
-      
-      - name: Create SLO_API_ID Secret
-       uses: gliech/create-github-secret-action@v1
-       if: env.pipeline_env == 'prd' && steps.appinsights_key.outputs.key != ''
-       with:
-         name: SLO_APP_ID
-         value: ${{ steps.AppInsightsOutput.outputs.appInsightsAppId }}
-         pa_token: ${{ secrets.PAT }}
+    - name: Provision Key Vault # Provision Key Vault - ARM Template deployment
+      uses: Azure/arm-deploy@main
+      id: keyvaultarmoutput
+      with:
+        scope: 'resourcegroup'
+        subscriptionId: '${{ env.subscriptionid }}'
+        resourceGroupName: '${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}'
+        template: '$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/key.vault.deploy.json'
+        deploymentMode: Incremental
+        parameters: '$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/key.vault.parameters.json keyVaultName="${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" logsRetentionInDays=30 enableVaultForDeployment=true enableVaultForTemplateDeployment=true enableVaultForDiskEncryption=true vaultSku="${{ env.vaultsku }}" diagnosticStorageAccountName="${{ env.cus_prefix }}${{ env.diagnosticStorageAccountName }}${{ env.team_suffix }}" diagnosticStorageAccountRG="${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" logAnalyticsWorkspaceResourceGroup="${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" logAnalyticsWorkspaceName="${{ env.cus_prefix }}${{ env.logAnalyticsWorkspaceName }}${{ env.team_suffix }}"'
 
-      #TODO [CD]: This action is used to deploy the coupons application onto Azure WebApp. Remove the below if condition to enable the action
-      - name: Azure WebApp
-        id: webAppDeploy
-        uses: Azure/webapps-deploy@v2
-        with:
-          app-name: "${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}"
-          package: "$GITHUB_WORKSPACE/drop/${{ env.repoName }}/target"
+    - name: Update Access Policy and Secrets in Key Vault # Update Access Policy and Secrets in Key Vault using azure cli commands
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az keyvault set-policy --name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --object-id "${{ steps.armAppServiceOutput.outputs.objectId }}" --secret-permissions get list
+          az keyvault set-policy --name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --object-id "${{ env.servicePrincipleObjId }}" --secret-permissions get list set
+          az keyvault secret set --vault-name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --name "spring-datasource-username" --value "${{ env.mySQLAdminLoginName }}@${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}"
+          az keyvault secret set --vault-name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --name "spring-datasource-password" --value "${{ secrets.mysqlsecretPassword }}"
+          az keyvault secret set --vault-name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --name "azure-keyvault-client-id" --value "${{ env.servicePrincipleClientId }}"
+          az keyvault secret set --vault-name "${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}" --name "azure-keyvault-client-key" --value "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
 
-      - name: Invoke Website
-        shell: bash
-        if: env.pipeline_env == 'qa'
-        run: |
-          echo "Invoking https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net/"
-          status=$(curl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net/" -I 2>&1 | awk '/HTTP\// {print $2}')
+    - name: Create Resource Group - Local Dev Setup # Create Resource Group using azure cli commands
+      if: env.pipeline_env == 'dev'
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az group create --name "${{ env.cus_prefix }}-Dojo-Coupon-Local-${{ env.team_suffix }}" --location "${{ env.location }}"
+
+    - name: Provision Key Vault - Local Setup  # Provision Key Vault - Local Setup - ARM Template deployment
+      if: env.pipeline_env == 'dev'
+      uses: Azure/arm-deploy@main
+      with:
+        scope: 'resourcegroup'
+        subscriptionId: '${{ env.subscriptionid }}'
+        resourceGroupName: '${{ env.cus_prefix }}-Dojo-Coupon-Local-${{ env.team_suffix }}'
+        template: '$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/key.vault.deploy.json'
+        deploymentMode: Incremental
+        parameters: '$GITHUB_WORKSPACE/drop/${{ env.repoName }}/IaC/templates/key.vault.parameters.json keyVaultName="${{ env.cus_prefix }}-coupons-${{ env.team_suffix }}" logsRetentionInDays=30 enableVaultForDeployment=true enableVaultForTemplateDeployment=true enableVaultForDiskEncryption=true vaultSku="${{ env.vaultsku }}" diagnosticStorageAccountName="${{ env.cus_prefix }}${{ env.diagnosticStorageAccountName }}${{ env.team_suffix }}" diagnosticStorageAccountRG="${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" logAnalyticsWorkspaceResourceGroup="${{ env.cus_prefix }}-${{ env.logAnalyticsWorkspaceResourceGroup }}-${{ env.team_suffix }}" logAnalyticsWorkspaceName="${{ env.cus_prefix }}${{ env.logAnalyticsWorkspaceName }}${{ env.team_suffix }}"'
+
+    - name: Update Access Policy and Secrets in Key Vault - Local Setup # Update Access Policy and Secrets in Key Vault - Local Setup - using azure cli commands
+      if: env.pipeline_env == 'dev'
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          az keyvault set-policy --name "${{ env.cus_prefix }}-coupons-${{ env.team_suffix }}" --object-id "${{ steps.armAppServiceOutput.outputs.objectId }}" --secret-permissions get list
+          az keyvault set-policy --name "${{ env.cus_prefix }}-coupons-${{ env.team_suffix }}" --object-id "${{ env.servicePrincipleObjId }}" --secret-permissions get list set delete restore
+          az keyvault secret set --vault-name "${{ env.cus_prefix }}-coupons-${{ env.team_suffix }}" --name "spring-datasource-username" --value "${{ env.mySQLAdminLoginName }}@${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}"
+          az keyvault secret set --vault-name "${{ env.cus_prefix }}-coupons-${{ env.team_suffix }}" --name "spring-datasource-password" --value "${{ secrets.mysqlsecretPassword }}"
+
+    #TODO [CO]: Below 3 steps are used to get AppInsights API Id & API Key for PRD environment only, which is used in the last stage of Release_to_Next_Env 
+    #to query AppInsights Availability and Latency of PRD environment and ensuring the environment is running as expected.
+    #Uncomment the below 3 actions to enable the steps to get API Key and store is as a secret.
+
+    - name: Generate AppInsights API Key # Generating AppInsights API Key using azure cli commands
+      uses: azure/CLI@1.0.4
+      if: env.pipeline_env == 'prd'
+      id: appinsights_key
+      continue-on-error: true
+      with:
+        inlineScript: |
+          az config set extension.use_dynamic_install=yes_without_prompt
+          output=$(az monitor app-insights api-key create --api-key mgr-slo --read-properties ReadTelemetry -g '${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}' --app '${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}' | jq .apiKey | tr -d '"')
+          echo ::set-output name=key::$output
+#
+    - name: Create SLO_API_KEY Secret
+      uses: gliech/create-github-secret-action@v1
+      if: env.pipeline_env == 'prd' && steps.appinsights_key.outputs.key != ''
+      with:
+        name: SLO_API_KEY
+        value: ${{ steps.appinsights_key.outputs.key }}
+        pa_token: ${{ secrets.PAT }} 
+#
+    - name: Create SLO_API_ID Secret
+      uses: gliech/create-github-secret-action@v1
+      if: env.pipeline_env == 'prd' && steps.appinsights_key.outputs.key != ''
+      with:
+        name: SLO_APP_ID
+        value: ${{ steps.AppInsightsOutput.outputs.appInsightsAppId }}
+        pa_token: ${{ secrets.PAT }} 
+
+    #TODO [CD]: This action is used to deploy the coupons application onto Azure WebApp. Remove the below if condition to enable the action
+    - name: Azure WebApp
+      id: webAppDeploy
+      uses: Azure/webapps-deploy@v2
+      with:
+        app-name: "${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}"
+        package: "$GITHUB_WORKSPACE/drop/${{ env.repoName }}/target"
+        
+    - name: Invoke Website
+      shell: bash
+      if: env.pipeline_env == 'qa'
+      run: |
+        echo "Invoking https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net/"
+        status=$(curl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net/" -I 2>&1 | awk '/HTTP\// {print $2}')
+        echo $status
+        if [ $status -ne 200 ];
+        then
+          echo "Retrying..."
+          status=$(curl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net/" -I 2>&1 | awk '/HTTP\// {print $2}')\
           echo $status
-          if [ $status -ne 200 ];
-          then
-            echo "Retrying..."
-            status=$(curl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net/" -I 2>&1 | awk '/HTTP\// {print $2}')\
-            echo $status
-          fi
+        fi
 
-      #TODO [CD]: This action is used to update the deployment status of release if the release is successful. Replace the ${{ false }} with success() to enable the below action
-      - name: Update deployment status ${{ env.pipeline_env }} (success)
-        if: success()
-        uses: chrnorm/deployment-status@releases/v1
-        with:
-          token: "${{ github.token }}"
-          target_url: https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net
-          state: "success"
-          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+    #TODO [CD]: This action is used to update the deployment status of release if the release is successful. Replace the ${{ false }} with success() to enable the below action
+    - name: Update deployment status ${{ env.pipeline_env }} (success)
+      if: success()
+      uses: chrnorm/deployment-status@releases/v1
+      with:
+        token: "${{ github.token }}"
+        target_url: https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net
+        state: "success"
+        deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 
-      #TODO [CD]: This action is used to update the deployment status of release if the release is failure. Replace the ${{ false }} with failure() to enable the below action
-      - name: Update deployment status ${{ env.pipeline_env }} (failure)
-        if: failure()
-        uses: chrnorm/deployment-status@releases/v1
-        with:
-          token: "${{ github.token }}"
-          target_url: https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net
-          state: "failure"
-          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+    #TODO [CD]: This action is used to update the deployment status of release if the release is failure. Replace the ${{ false }} with failure() to enable the below action
+    - name: Update deployment status ${{ env.pipeline_env }} (failure)
+      if: failure()
+      uses: chrnorm/deployment-status@releases/v1
+      with:
+        token: "${{ github.token }}"
+        target_url: https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net
+        state: "failure"
+        deployment_id: ${{ steps.deployment.outputs.deployment_id }}
 
-  #----------------------------------------------------------------------------------------------#
+#----------------------------------------------------------------------------------------------#
   #TODO [CQ]: BDD Automated Tests. Uncomment the below block to enable the BDD Automated Test Stage
 
   BDD_Automated_Tests:
-   needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
-   runs-on: windows-latest # The type of runner that the job will run on
-   outputs: # Outputs expected from release job to be used in other jobs
-     bdd_status: ${{ steps.bddtests.outcome }}
-   if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
-   steps:
-   - name: Checkout Repository #Checkout the Repository into the agent
-     uses: actions/checkout@v2
+    needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
+    runs-on: windows-latest # The type of runner that the job will run on
+    outputs: # Outputs expected from release job to be used in other jobs
+      bdd_status: ${{ steps.bddtests.outcome }}
+    if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
+    steps:
+    - name: Checkout Repository #Checkout the Repository into the agent
+      uses: actions/checkout@v2
   
-   # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
-   - name: Download build artifacts
-     uses: dawidd6/action-download-artifact@v2
-     with:
-       workflow: coupons-ci-base.yml
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Organizational Details # Set Variables
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'org-details'
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Coupons All Stages # Set Variables
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'all-stages-coupon'
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
-  
-   # This action is used to send workflow status to subscribed Microsoft Teams channel
-   - name: Microsoft Teams Deploy Card
-     uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-     if: always()
-     with:
-       # Microsoft Teams webhook URI
-       webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-       # Github token
-       github-token: ${{ github.token }}
-       # Name of the environment (won't be included in the card if none)
-       environment: ${{ needs.release.outputs.pipeline_env }}
-       # Show the MS Teams card upon failure only of this Github Actions job
-       show-on-failure: true
-       custom-facts: |
-         - name: Stage
-           value: BDD Automated Tests - ${{ needs.release.outputs.pipeline_env }}
-  
-   #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action
-   - name: Update app config for BDD Tests
-     run: D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\IaC\scripts\UpdateVariablesAtRunTime.ps1 -configPath D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\main\resources\application.properties -keyVaultUri "https://${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}.vault.azure.net/" -instrumentationKey "123456" -sourceUrl "jdbc:mysql://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.mysql.database.azure.com:3306/hotel_coupon?verifyServerCertificate=false&useSSL=false&requireSSL=false" -appUrl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net" -principalId "${{ env.servicePrincipleClientId }}" -principalPass "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
-     shell: powershell
-  
-   #TODO [CQ]: This action is used to execute BDD Tests. Remove the below if condition to enable the action
-   - name: Run BDD Tests
-     id: bddtests
-     run: mvn -B verify -Dit.test=CouponControllerBDDIT verify --file "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\pom.xml"
-     shell: bash
+    # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
+    - name: Download build artifacts
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: coupons-ci-base.yml
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Organizational Details # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'org-details'
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Coupons All Stages # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'all-stages-coupon'
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
+#
+    # This action is used to send workflow status to subscribed Microsoft Teams channel
+    - name: Microsoft Teams Deploy Card
+      uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+      if: always()
+      with:
+        # Microsoft Teams webhook URI
+        webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+        # Github token
+        github-token: ${{ github.token }}
+        # Name of the environment (won't be included in the card if none)
+        environment: ${{ needs.release.outputs.pipeline_env }}
+        # Show the MS Teams card upon failure only of this Github Actions job
+        show-on-failure: true
+        custom-facts: |
+          - name: Stage
+            value: BDD Automated Tests - ${{ needs.release.outputs.pipeline_env }}
+#
+    #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action    
+    - name: Update app config for BDD Tests
+      run: D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\IaC\scripts\UpdateVariablesAtRunTime.ps1 -configPath D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\main\resources\application.properties -keyVaultUri "https://${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}.vault.azure.net/" -instrumentationKey "123456" -sourceUrl "jdbc:mysql://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.mysql.database.azure.com:3306/hotel_coupon?verifyServerCertificate=false&useSSL=false&requireSSL=false" -appUrl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net" -principalId "${{ env.servicePrincipleClientId }}" -principalPass "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
+      shell: powershell
+#
+    #TODO [CQ]: This action is used to execute BDD Tests. Remove the below if condition to enable the action      
+    - name: Run BDD Tests
+      id: bddtests
+      run: mvn -B verify -Dit.test=CouponControllerBDDIT verify --file "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\pom.xml"
+      shell: bash
 
-
+  #----------------------------------------------------------------------------------------------#
   #TODO [CQ]: UI Tests. Uncomment the below block to enable the UI Tests Stage
 
   UI_Tests:
-   needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
-   runs-on: windows-latest # The type of runner that the job will run on
-   outputs: # Outputs expected from release job to be used in other jobs
-     ui_status: ${{ steps.uitests.outcome }}
-   if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
-   steps:
-   - name: Checkout Repository #Checkout the Repository into the agent
-     uses: actions/checkout@v2
-  
-   # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
-   - name: Download build artifacts
-     uses: dawidd6/action-download-artifact@v2
-     with:
-       workflow: coupons-ci-base.yml
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Organizational Details # Set Variables
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'org-details'
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Coupons All Stages # Set Variables
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'all-stages-coupon'
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
-  
-   # This action is used to send workflow status to subscribed Microsoft Teams channel
-   - name: Microsoft Teams Deploy Card
-     uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-     if: always()
-     with:
-       # Microsoft Teams webhook URI
-       webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-       # Github token
-       github-token: ${{ github.token }}
-       # Name of the environment (won't be included in the card if none)
-       environment: ${{ needs.release.outputs.pipeline_env }}
-       # Show the MS Teams card upon failure only of this Github Actions job
-       show-on-failure: true
-       custom-facts: |
-         - name: Stage
-           value: UI Tests - ${{ needs.release.outputs.pipeline_env }}
-  
-   - name: Setup NuGet # This action downloads and installs a given version of NuGet.exe
-     uses: NuGet/setup-nuget@v1.0.5
-     with:
-       nuget-version: latest
-  
-   # This action installs/updates the chrome version to the latest version in the agent
-   - name: Update Chrome Version
-     run: |
-       $theurl = "http://dl.google.com/edgedl/chrome/install/GoogleChromeStandaloneEnterprise64.msi"
-       mkdir c:\tmp
-       $output = "c:\tmp\chrome.msi"
-       Invoke-WebRequest -Uri $theurl -OutFile $output -ErrorAction SilentlyContinue
-       msiexec /q /i c:\tmp\chrome.msi
-       start-sleep -Seconds 120 # sleep for 5 mins just to allow updates to be processed
-       Remove-Item -Path c:\tmp\chrome.msi -Force
-       nuget install Selenium.WebDriver.ChromeDriver -ExcludeVersion
-       Copy-Item D:\a\${{ env.repoName }}\${{ env.repoName }}\Selenium.WebDriver.ChromeDriver\driver\win32\chromedriver.exe D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\test\resources\binaries -force
-     shell: powershell
-  
-   #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action
-   - name: Update app config for UI Tests
-     run: D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\IaC\scripts\UpdateVariablesAtRunTime.ps1 -configPath D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\main\resources\application.properties -keyVaultUri "https://${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}.vault.azure.net/" -instrumentationKey "83a016af-e6ca-452d-a624-0dbf47011e2d" -sourceUrl "jdbc:mysql://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.mysql.database.azure.com:3306/hotel_coupon?verifyServerCertificate=false&useSSL=false&requireSSL=false" -appUrl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net" -principalId "${{ env.servicePrincipleClientId }}" -principalPass "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
-     shell: powershell
-  
-   #TODO [CQ]: This action is used to execute UI Tests. Remove the below if condition to enable the action
-   - name: Run UI Test
-     id: uitests
-     run: mvn -B verify -Dit.test=LoginUIIT#testInQA* verify --file "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\pom.xml"
-     shell: bash
+    needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
+    runs-on: windows-latest # The type of runner that the job will run on
+    outputs: # Outputs expected from release job to be used in other jobs
+      ui_status: ${{ steps.uitests.outcome }}
+    if: needs.release.outputs.pipeline_env == 'qa' # This condition ensures that it only runs for qa environment
+    steps:
+    - name: Checkout Repository #Checkout the Repository into the agent
+      uses: actions/checkout@v2
+    
+    # This action is used to download the build artifacts, which has been published by the latest run of CI pipeline
+    - name: Download build artifacts
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        workflow: coupons-ci-base.yml
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Organizational Details # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'org-details'
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Coupons All Stages # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'all-stages-coupon'
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
+#
+    # This action is used to send workflow status to subscribed Microsoft Teams channel
+    - name: Microsoft Teams Deploy Card
+      uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+      if: always()
+      with:
+        # Microsoft Teams webhook URI
+        webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+        # Github token
+        github-token: ${{ github.token }}
+        # Name of the environment (won't be included in the card if none)
+        environment: ${{ needs.release.outputs.pipeline_env }}
+        # Show the MS Teams card upon failure only of this Github Actions job
+        show-on-failure: true
+        custom-facts: |
+          - name: Stage
+            value: UI Tests - ${{ needs.release.outputs.pipeline_env }}
+#
+    - name: Setup NuGet # This action downloads and installs a given version of NuGet.exe
+      uses: NuGet/setup-nuget@v1.0.5
+      with:
+        nuget-version: latest
+#
+    # This action installs/updates the chrome version to the latest version in the agent    
+    - name: Update Chrome Version
+      run: |
+        $theurl = "http://dl.google.com/edgedl/chrome/install/GoogleChromeStandaloneEnterprise64.msi"
+        mkdir c:\tmp
+        $output = "c:\tmp\chrome.msi"
+        Invoke-WebRequest -Uri $theurl -OutFile $output -ErrorAction SilentlyContinue
+        msiexec /q /i c:\tmp\chrome.msi
+        start-sleep -Seconds 120 # sleep for 5 mins just to allow updates to be processed 
+        Remove-Item -Path c:\tmp\chrome.msi -Force
+        nuget install Selenium.WebDriver.ChromeDriver -ExcludeVersion
+        Copy-Item D:\a\${{ env.repoName }}\${{ env.repoName }}\Selenium.WebDriver.ChromeDriver\driver\win32\chromedriver.exe D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\test\resources\binaries -force
+      shell: powershell
+#   
+    #TODO [CQ]: This action is used to update app settings with current environment variable values. Remove the below if condition to enable the action
+    - name: Update app config for UI Tests
+      run: D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\IaC\scripts\UpdateVariablesAtRunTime.ps1 -configPath D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\src\main\resources\application.properties -keyVaultUri "https://${{ env.cus_prefix }}${{ env.keyVaultName }}${{ env.team_suffix }}.vault.azure.net/" -instrumentationKey "83a016af-e6ca-452d-a624-0dbf47011e2d" -sourceUrl "jdbc:mysql://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.mysql.database.azure.com:3306/hotel_coupon?verifyServerCertificate=false&useSSL=false&requireSSL=false" -appUrl "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net" -principalId "${{ env.servicePrincipleClientId }}" -principalPass "${{ secrets.KEYVAULTSERVICEPRINCIPALCLIENTPASSWORD }}"
+      shell: powershell
+      
+    #TODO [CQ]: This action is used to execute UI Tests. Remove the below if condition to enable the action    
+    - name: Run UI Test
+      id: uitests
+      run: mvn -B verify -Dit.test=LoginUIIT#testInQA* verify --file "D:\a\${{ env.repoName }}\${{ env.repoName }}\drop\${{ env.repoName }}\pom.xml"
+      shell: bash
 
   #----------------------------------------------------------------------------------------------#
   #TODO [CS]: AZSK Scan. Uncomment the below block of code to enable AZSK Scan stage
 
   AZSK_Scan:
-   needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
-   runs-on: windows-latest # The type of runner that the job will run on
-   steps:
-   - name: Checkout Repository #Checkout the Repository into the agent
-     uses: actions/checkout@v2
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Organizational Details # Set Variables
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'org-details'
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Coupons All Stages # Set Variables
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'all-stages-coupon'
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
-  
-   # This action is used to send workflow status to subscribed Microsoft Teams channel
-   - name: Microsoft Teams Deploy Card
-     uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-     if: always()
-     with:
-       # Microsoft Teams webhook URI
-       webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-       # Github token
-       github-token: ${{ github.token }}
-       # Name of the environment (won't be included in the card if none)
-       environment: ${{ needs.release.outputs.pipeline_env }}
-       # Show the MS Teams card upon failure only of this Github Actions job
-       show-on-failure: true
-       custom-facts: |
-         - name: Stage
-           value: AZSK Scan - ${{ needs.release.outputs.pipeline_env }}
-  
-   - name: Login via Az module # Login to Azure with credentials of service principal stored in secrets
-     uses: azure/login@v1.1
-     with:
-       creds: ${{ secrets.AZURE_CREDENTIALS }}
-       enable-AzPSSession: true
-  
-   #TODO [CS]: This action is used to run AZSK Tests on azure resources of a particular environment. Remove the below if condition to enable the action
-   - name: Install Az-Sk Module and Run AzSK Security Verification Tests
-     run: |
-       Install-Module AzSK -AllowClobber -SkipPublisherCheck -Force
-       Import-Module AzSK
-       (ECHO Y | powershell Get-AzSKAzureServicesSecurityStatus -SubscriptionId  '${{ env.subscriptionid }}' -ResourceGroupNames '${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}' -DoNotOpenOutputFolder)
-       New-Item -Path "D:\a\${{ env.repoName }}\" -Name "upload" -ItemType "directory"
-       $destinationRoot = "D:\a\${{ env.repoName }}\upload\AzSk.zip"
-       Compress-Archive -LiteralPath ${{ env.az_sk_path }} -DestinationPath $destinationRoot
-     shell: powershell
-  
-   # This action is used to publish the AZSK Results as artifacts.
-   - name: Publish AzSK Results #Publish Artifact
-     uses: actions/upload-artifact@master
-     with:
-         name: azsk
-         path: D:\a\${{ env.repoName }}\upload
+    needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
+    runs-on: windows-latest # The type of runner that the job will run on
+    steps:
+    - name: Checkout Repository #Checkout the Repository into the agent
+      uses: actions/checkout@v2
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Organizational Details # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'org-details'
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Coupons All Stages # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'all-stages-coupon'
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
+#
+    # This action is used to send workflow status to subscribed Microsoft Teams channel
+    - name: Microsoft Teams Deploy Card
+      uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+      if: always()
+      with:
+        # Microsoft Teams webhook URI
+        webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+        # Github token
+        github-token: ${{ github.token }}
+        # Name of the environment (won't be included in the card if none)
+        environment: ${{ needs.release.outputs.pipeline_env }}
+        # Show the MS Teams card upon failure only of this Github Actions job
+        show-on-failure: true
+        custom-facts: |
+          - name: Stage
+            value: AZSK Scan - ${{ needs.release.outputs.pipeline_env }}
+#
+    - name: Login via Az module # Login to Azure with credentials of service principal stored in secrets
+      uses: azure/login@v1.1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        enable-AzPSSession: true
+#
+    #TODO [CS]: This action is used to run AZSK Tests on azure resources of a particular environment. Remove the below if condition to enable the action
+    - name: Install Az-Sk Module and Run AzSK Security Verification Tests
+      run: |
+        Install-Module AzSK -AllowClobber -SkipPublisherCheck -Force
+        Import-Module AzSK
+        (ECHO Y | powershell Get-AzSKAzureServicesSecurityStatus -SubscriptionId  '${{ env.subscriptionid }}' -ResourceGroupNames '${{ env.cus_prefix }}-${{ env.resourcegroup }}-${{ env.team_suffix }}' -DoNotOpenOutputFolder)
+        New-Item -Path "D:\a\${{ env.repoName }}\" -Name "upload" -ItemType "directory"
+        $destinationRoot = "D:\a\${{ env.repoName }}\upload\AzSk.zip"
+        Compress-Archive -LiteralPath ${{ env.az_sk_path }} -DestinationPath $destinationRoot
+      shell: powershell    
+#
+    # This action is used to publish the AZSK Results as artifacts. 
+    - name: Publish AzSK Results #Publish Artifact
+      uses: actions/upload-artifact@master
+      with:
+          name: azsk
+          path: D:\a\${{ env.repoName }}\upload
 
   #----------------------------------------------------------------------------------------------#
   #TODO [CS]: OWASP Scan. Uncomment the below block to enable OWASP Scan stage
 
   OWASP_Scan:
-   needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
-   runs-on: ubuntu-latest # The type of runner that the job will run on
-   outputs: # Outputs expected from release job to be used in other jobs
-     owasp_status: ${{ steps.owasptests.outcome }}
-   steps:
-   - name: Checkout Repository #Checkout the Repository into the agent
-     uses: actions/checkout@v2
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Organizational Details # Set Variables
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'org-details'
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Coupons All Stages # Set Variables
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'all-stages-coupon'
-  
-   # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
-   - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
-     uses: ./.github/actions/set-variable
-     with:
-       variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
-  
-   # This action is used to send workflow status to subscribed Microsoft Teams channel
-   - name: Microsoft Teams Deploy Card
-     uses: toko-bifrost/ms-teams-deploy-card@3.1.2
-     if: always()
-     with:
-       # Microsoft Teams webhook URI
-       webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
-       # Github token
-       github-token: ${{ github.token }}
-       # Name of the environment (won't be included in the card if none)
-       environment: ${{ needs.release.outputs.pipeline_env }}
-       # Show the MS Teams card upon failure only of this Github Actions job
-       show-on-failure: true
-       custom-facts: |
-         - name: Stage
-           value: OWASP Scan - ${{ needs.release.outputs.pipeline_env }}
-  
-   #TODO [CS]: This action is used to execute OWASP ZAP scan on the deployed coupons application. Remove the below if condition to enable the action
-   - name: OWASP ZAP Full Scan
-     id: owasptests
-     uses: zaproxy/action-full-scan@v0.2.0
-     with:
-       # Target URL
-       target: "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net"
-       # The action status will be set to fail if ZAP identifies any alerts during the full scan
-       fail_action: false
-       issue_title: "ZAP Scan - ${{ needs.release.outputs.pipeline_env }}"
+    needs: [release] # Only after release stage runs success, this stage will run, or else it will be skipped.
+    runs-on: ubuntu-latest # The type of runner that the job will run on
+    outputs: # Outputs expected from release job to be used in other jobs
+      owasp_status: ${{ steps.owasptests.outcome }}
+    steps:
+    - name: Checkout Repository #Checkout the Repository into the agent
+      uses: actions/checkout@v2
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Organizational Details # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'org-details'
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Coupons All Stages # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'all-stages-coupon'
+#
+    # This action is developed as an IP by the MCS team to use variable groups present in the .github/variables folder. For more details: https://github.com/marketplace/actions/set-variable
+    - name: Set Environment Variables - Coupons ${{ needs.release.outputs.pipeline_env }} # Set Variables based on environment
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'coupon-${{ needs.release.outputs.pipeline_env }}'
+#
+    # This action is used to send workflow status to subscribed Microsoft Teams channel
+    - name: Microsoft Teams Deploy Card
+      uses: toko-bifrost/ms-teams-deploy-card@3.1.2
+      if: always()
+      with:
+        # Microsoft Teams webhook URI
+        webhook-uri: ${{ secrets.MS_TEAMS_WEBHOOK_URI }}
+        # Github token
+        github-token: ${{ github.token }}
+        # Name of the environment (won't be included in the card if none)
+        environment: ${{ needs.release.outputs.pipeline_env }}
+        # Show the MS Teams card upon failure only of this Github Actions job
+        show-on-failure: true
+        custom-facts: |
+          - name: Stage
+            value: OWASP Scan - ${{ needs.release.outputs.pipeline_env }}
+#
+    #TODO [CS]: This action is used to execute OWASP ZAP scan on the deployed coupons application. Remove the below if condition to enable the action
+    - name: OWASP ZAP Full Scan
+      id: owasptests
+      uses: zaproxy/action-full-scan@v0.2.0
+      with:
+        # Target URL
+        target: "https://${{ env.cus_prefix }}-${{ env.webAppName }}-${{ env.team_suffix }}.azurewebsites.net"
+        # The action status will be set to fail if ZAP identifies any alerts during the full scan
+        fail_action: false
+        issue_title: "ZAP Scan - ${{ needs.release.outputs.pipeline_env }}"
 
   #----------------------------------------------------------------------------------------------#
   #TODO [CQ]: Issues Creation. Uncomment the below block to enable the Issues Creation Stage.
 
   Issues_Creation:
-   needs: [BDD_Automated_Tests,UI_Tests] # This ensures this stage runs after BDD & UI Test stages run
-   # This condition ensures this stage only runs if either BDD or UI Test fails
-   if: always() && (needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' || needs.UI_Tests.outputs.ui_status == 'failure')
-   runs-on: ubuntu-latest # The type of runner that the job will run on
-   steps:
-   - name: Checkout Repository #Checkout the Repository into the agent
-     uses: actions/checkout@v2
-  
-   #TODO [CQ]: This action creates an issue in GitHub if BDD Tests fail.
-   #In the if condition below, replace the ${{ false }} with needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' to enable the below action
-   - name: Create ADO Bug on Failure for BDD Tests
-     uses: JasonEtco/create-an-issue@v2
-     if: needs.BDD_Automated_Tests.outputs.bdd_status == 'failure'
-     env:
-       GITHUB_TOKEN: ${{ secrets.PAT }}
-     with:
-       filename: .github/issues/bdd-issue-template.md
-       update_existing: true
-  
-   #TODO [CQ]: This action creates an issue in GitHub if UI Tests fail.
-   #In the if condition below, replace the ${{ false }} with needs.UI_Tests.outputs.ui_status == 'failure' to enable the below action
-   - name: Create ADO Bug on Failure for UI Tests
-     uses: JasonEtco/create-an-issue@v2
-     if: needs.UI_Tests.outputs.ui_status == 'failure'
-     env:
-       GITHUB_TOKEN: ${{ secrets.PAT }}
-     with:
-       filename: .github/issues/ui-issue-template.md
-       update_existing: true
+    needs: [BDD_Automated_Tests,UI_Tests] # This ensures this stage runs after BDD & UI Test stages run
+    # This condition ensures this stage only runs if either BDD or UI Test fails
+    if: always() && (needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' || needs.UI_Tests.outputs.ui_status == 'failure')
+    runs-on: ubuntu-latest # The type of runner that the job will run on
+    steps:
+    - name: Checkout Repository #Checkout the Repository into the agent
+      uses: actions/checkout@v2
+#
+    #TODO [CQ]: This action creates an issue in GitHub if BDD Tests fail. 
+    #In the if condition below, replace the ${{ false }} with needs.BDD_Automated_Tests.outputs.bdd_status == 'failure' to enable the below action   
+    - name: Create ADO Bug on Failure for BDD Tests
+      uses: JasonEtco/create-an-issue@v2
+      if: needs.BDD_Automated_Tests.outputs.bdd_status == 'failure'
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAT }} 
+      with:
+        filename: .github/issues/bdd-issue-template.md
+        update_existing: true
+#
+    #TODO [CQ]: This action creates an issue in GitHub if UI Tests fail. 
+    #In the if condition below, replace the ${{ false }} with needs.UI_Tests.outputs.ui_status == 'failure' to enable the below action   
+    - name: Create ADO Bug on Failure for UI Tests
+      uses: JasonEtco/create-an-issue@v2
+      if: needs.UI_Tests.outputs.ui_status == 'failure'
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAT }} 
+      with:
+        filename: .github/issues/ui-issue-template.md
+        update_existing: true
 
   #----------------------------------------------------------------------------------------------#
 
   Release_To_Next_Env:
     #TODO [CQ]: In needs now also add BDD_Automated_Tests,UI_Tests. This ensures this stage runs after release & BDD & UI Test stages run
-    needs: [release] # [release,BDD_Automated_Tests,UI_Tests]
+    needs: [release,BDD_Automated_Tests,UI_Tests]
     runs-on: ubuntu-latest # The type of runner that the job will run on
     # The below conditions ensure that, this stage only runs for dev & qa, and only if release stages is a success, and that the tests didn't fail
     #TODO [CQ]: In if condition now also add BDD_Automated_Tests & UI_Tests success condition. This ensures this stage only runs if the tests pass
-    if: always() && needs.release.outputs.pipeline_env != 'prd' && needs.release.outputs.result == 'success' #&& needs.BDD_Automated_Tests.outputs.bdd_status != 'failure' && needs.UI_Tests.outputs.ui_status != 'failure'
+    if: always() && needs.release.outputs.pipeline_env != 'prd' && needs.release.outputs.result == 'success' && needs.BDD_Automated_Tests.outputs.bdd_status != 'failure' && needs.UI_Tests.outputs.ui_status != 'failure'
     steps:
-      - name: Checkout Repository #Checkout the Repository into the agent
-        uses: actions/checkout@v2
+    - name: Checkout Repository #Checkout the Repository into the agent
+      uses: actions/checkout@v2
 
-      - name: Set Environment Variables - Coupons All Stages # Set Variables
-        uses: ./.github/actions/set-variable
-        with:
-          variableFileName: "all-stages-coupon"
+    - name: Set Environment Variables - Coupons All Stages # Set Variables
+      uses: ./.github/actions/set-variable
+      with:
+        variableFileName: 'all-stages-coupon'
 
-      - name: Configure parameters for Repository Dispatch
-        shell: bash
-        run: |
-          if [ ${{ needs.release.outputs.pipeline_env }} = 'dev' ]; then
-            echo "trigger=qa" >> $GITHUB_ENV
-          fi
-          if [ ${{ needs.release.outputs.pipeline_env }} = 'qa' ]; then
-            echo "trigger=prd" >> $GITHUB_ENV
-          fi
+    - name: Configure parameters for Repository Dispatch
+      shell: bash
+      run: |
+        if [ ${{ needs.release.outputs.pipeline_env }} = 'dev' ]; then
+          echo "trigger=qa" >> $GITHUB_ENV
+        fi
+        if [ ${{ needs.release.outputs.pipeline_env }} = 'qa' ]; then
+          echo "trigger=prd" >> $GITHUB_ENV
+        fi
 
-      #TODO [CO]: Uncomment the below block to enable the evaluation of latency and availability of PRD application.
+    #TODO [CO]: Uncomment the below block to enable the evaluation of latency and availability of PRD application.
 
-      ## This action is used to get the latency of the PRD coupons application using App Insights API
-      - name: Get Latency
-       uses: fjogeleit/http-request-action@master
-       if: env.trigger == 'prd'
-       id: slo
-       with:
-         url: https://api.applicationinsights.io/v1/apps/${{ secrets.SLO_APP_ID }}${{ env.slo_query }}
-         method: 'GET'
-         customHeaders: '{"x-api-key":"${{ secrets.SLO_API_KEY }}"}'
-      
-      # This action is used to evaluate the latency of the PRD coupons application. If it is less than the threshold, the pipeline proceeds to PRD or else it stops release to PRD.
-      - name: Check Latency
-       shell: bash
-       if: env.trigger == 'prd'
-       run: |
-         slo=$(echo '${{ steps.slo.outputs.response }}' | jq .tables[].rows[0][1])
-         echo $slo
-         if (( $(echo "$slo ${{ env.slo_threshold }}" | awk '{print ($1 > $2)}') ));
-         then
-           exit 1
-         fi
-      
-      # This action is used to get the availability of the PRD coupons application using App Insights API
-      - name: Get Availability
-       uses: fjogeleit/http-request-action@master
-       if: env.trigger == 'prd'
-       id: availability
-       with:
-         url: https://api.applicationinsights.io/v1/apps/${{ secrets.SLO_APP_ID }}${{ env.latency_query }}
-         method: 'GET'
-         customHeaders: '{"x-api-key":"${{ secrets.SLO_API_KEY }}"}'
-      
-      # This action is used to evaluate the availability of the PRD coupons application. If it is equal to 1 i.e. it is available, the pipeline proceeds to PRD or else if it is equal to 0 it stops release to PRD.
-      - name: Check Availability
-       shell: bash
-       if: env.trigger == 'prd'
-       run: |
-         latency=$(echo '${{ steps.availability.outputs.response }}' | jq .tables[].rows[0][0] | tr -d '"')
-         echo $latency
-         if [ $latency -eq 0 ];
-         then
-           exit 1
-         fi
+    # This action is used to get the latency of the PRD coupons application using App Insights API
+    - name: Get Latency
+      uses: fjogeleit/http-request-action@master
+      if: env.trigger == 'prd'
+      id: slo
+      with:
+        url: https://api.applicationinsights.io/v1/apps/${{ secrets.SLO_APP_ID }}${{ env.slo_query }}
+        method: 'GET'
+        customHeaders: '{"x-api-key":"${{ secrets.SLO_API_KEY }}"}'
+#
+    # This action is used to evaluate the latency of the PRD coupons application. If it is less than the threshold, the pipeline proceeds to PRD or else it stops release to PRD.
+    - name: Check Latency
+      shell: bash
+      if: env.trigger == 'prd'
+      run: |
+        slo=$(echo '${{ steps.slo.outputs.response }}' | jq .tables[].rows[0][1])
+        echo $slo
+        if (( $(echo "$slo ${{ env.slo_threshold }}" | awk '{print ($1 > $2)}') ));
+        then
+          exit 1
+        fi
+#
+    # This action is used to get the availability of the PRD coupons application using App Insights API
+    - name: Get Availability
+      uses: fjogeleit/http-request-action@master
+      if: env.trigger == 'prd'
+      id: availability
+      with:
+        url: https://api.applicationinsights.io/v1/apps/${{ secrets.SLO_APP_ID }}${{ env.latency_query }}
+        method: 'GET'
+        customHeaders: '{"x-api-key":"${{ secrets.SLO_API_KEY }}"}'
+#
+    # This action is used to evaluate the availability of the PRD coupons application. If it is equal to 1 i.e. it is available, the pipeline proceeds to PRD or else if it is equal to 0 it stops release to PRD.
+    - name: Check Availability
+      shell: bash
+      if: env.trigger == 'prd'
+      run: |
+        latency=$(echo '${{ steps.availability.outputs.response }}' | jq .tables[].rows[0][0] | tr -d '"')
+        echo $latency
+        if [ $latency -eq 0 ];
+        then
+          exit 1
+        fi
 
-      # This action is responsible to re-running the same CD pipeline using workflow dispatch in the next environment
-      #TODO [CD]: Remove the below if condition to enable the action
-      - name: Trigger - Release to ${{ env.trigger }}
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: Coupons-CD-Base
-          token: ${{ secrets.PAT }}
-          inputs: '{ "environment": "${{ env.trigger }}" }'
-
+    # This action is responsible to re-running the same CD pipeline using workflow dispatch in the next environment
+    #TODO [CD]: Remove the below if condition to enable the action
+    - name: Trigger - Release to ${{ env.trigger }}
+      uses: benc-uk/workflow-dispatch@v1
+      with:
+        workflow: Coupons-CD-Base
+        token: ${{ secrets.PAT }}
+        inputs: '{ "environment": "${{ env.trigger }}" }'
